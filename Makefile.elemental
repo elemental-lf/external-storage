@@ -22,7 +22,7 @@ build-rbd-provisioner:
 build-cephfs-provisioner:
 	docker build -t $(CEPHFS_IMAGE) -f ceph/cephfs/Dockerfile.release --build-arg=CEPH_VERSION=$(CEPH_VERSION) .
 
-push: rbd-provisioner cephfs-provisioner
+push: build-rbd-provisioner build-cephfs-provisioner
 	docker push $(RBD_IMAGE)
 	docker push $(CEPHFS_IMAGE)
 
