@@ -1,0 +1,29 @@
+ifeq ($(REGISTRY),)
+	REGISTRY = elementalnet
+endif
+
+VERSION=$(shell ./build-script-collection/get-version-git elemental-v)
+IMAGE_VERSION = $(subst +,_,$(VERSION))
+
+ifeq ($(CEPH_VERSION),)
+	CEPH_VERSION=mimic
+endif
+
+RBD_IMAGE = $(REGISTRY)/rbd-provisioner:$(IMAGE_VERSION)
+CEPHFS_IMAGE = $(REGISTRY)/cephfs-provisioner:$(IMAGE_VERSION)
+
+all: build push
+
+build: build-rbd-provisioner build-cephfs-provisioner
+
+build-rbd-provisioner:
+	docker build -t $(RBD_IMAGE) -f ceph/rbd/Dockerfile.release --build-arg=CEPH_VERSION=$(CEPH_VERSION) .
+
+build-cephfs-provisioner:
+	docker build -t $(CEPHFS_IMAGE) -f ceph/cephfs/Dockerfile.release --build-arg=CEPH_VERSION=$(CEPH_VERSION) .
+
+push: rbd-provisioner cephfs-provisioner
+	docker push $(RBD_IMAGE)
+	docker push $(CEPHFS_IMAGE)
+
+.PHONY: all build build-rbd-provisioner build-cephfs-provisioner push

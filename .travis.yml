@@ -1,33 +1,24 @@
-os:
-  - osx
-  - linux
+dist: xenial
+language: generic
 
-language: go
-go:
-  - 1.11.1
-services: docker
-
-go_import_path: github.com/kubernetes-incubator/external-storage
+services:
+  - docker
 
 env:
-  - TEST_SUITE=osx
-  - TEST_SUITE=linux-local-volume
-  - TEST_SUITE=linux-everything-else
-#  - TEST_SUITE=linux-nfs ETCD_VER=v3.0.14 KUBE_VERSION=1.5.4
-  - TEST_SUITE=linux-nfs ETCD_VER=v3.2.18 KUBE_VERSION=1.11.2
+  global:
+    - secure: '35NXL62Stj5/O2n9Z13rrJQturt3S3ga2Jh6EdlzRuOY4eTR9MKA3xXUbTm7NDUOZdjhqsrmQoIXc6ATc0LxCh2w//Z8yhG9pdDoLSZA90DmQ/TL7i2NxFN0N/FyqgvFCq3nPUy/Ks1p5C+ovwYDLzhkj61g3Py5+HGy7Sz8i9RYowFUf3VaXZNMokanVzUNYodUKDmgUEeZAhzC4ZhqcLR78kRGeF3h+e+Iz4ccB6hDzjsGHD0iJ7NEd0TNa4+ZcbUN39fjFRHxMR/n1uvrpJtNmwgsW5L2b422YVnEYN4P9uvzdl+ZhcGqnAEYqM+aOgE+pFQhEGaXLahpu+mSfEbxbo2bjohIQNmhV+qnUK5PwGN6dzJY2MdiEeqOVzQ1VVLXZUb/nzL1zyrZnLUx4Ubr24mTGO+u62sXP88SGjjvoac1wzuvig664sryEYbJ8leaoNoMKPg1uiaYJjMvqcdULXl3pBS67Kz0+bFrz7ucSmjp70Nd/6ejk/otyT6eueGmNkKzVSane7Sn49igW0IJfEHAOkxJoXutAyjwtZ4mNWYY9U8dJvE7GpsS+Q8a7Hrau+vA4fBcMPmTXpIGCDv4u+Zq1aFkUr+s9vA49UJeNtaLcRyfo1SXhrz0HDMY0U1g4zX1eEEtGb5B9JMvNillM2HuLfGw9aCWi0a7cT4='
+    - secure: 'bIqTjizauy684Id7N7DX9X/+rx7zTTLTFqcR5oZB4RanilZUJMO+KWlic+TraFDVzDhjYdQc0vK/skyL6nv804/35JvXIrvzFzTspgZbmYrf9eSLx4ToPZd8MwkKbmHttvHoJWpMNy+nQgl/svLdRHT6JXzzIQpjumMFUiNShamIK5h+fBGj/+fMk6vFx61cMCnhsxcQ7xJMfjw0x7NFtvoLXtqGbZXdPLPOukHKyjW4jJyKUA6dr20CxwNhIHxvF5tE8hwlxI3qjgnlAiw8NcrrczMZZlLNWRBY69dVc1LDw2MtkGiOSaHaz00EDd2v+48xvcQwvnBsghl0yZfWxjkIA6ylHaSYdMzmQ3DNuhBatRF+N6aNzLjLyATfFbXhdyvWBZxaWIs5eBTnDf7OhS0bEkT8MrzWImFyf9jCTherU/LSA4PL7znYKlE4pjuN+dgOXsQpi92wQBGdy2Q6JKrAsxDSEWTOLEy7J95FUjMBAHWgVhA2eDMhSBkQj08dI1kc0g+GQBG/HeWQ2hsfguV8h+wxw3zOeMHpGrvrN6ousfyivqH6SZJ+qebKfSc6EU6q1ENLCgMaM7mI2O+oE1Jjit539J+zYidRSOB3uZNGXL4xZbdW0qzT5vjr2Ql/htjY+J1PR6kO09/JEgQFrj2iNwQV1Q8MqGmKpX95j6Y='
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ulimit -n 8192; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then mkdir -p $GOPATH/bin; fi
+  - curl --retry 5 -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - travis_retry sudo apt-get update
+  - travis_retry sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+  - docker version
 
-install: true
+install:
+  - make -f Makefile.elemental build
 
 script:
-  - ./test.sh
-
-deploy:
-  - provider: script
-    script: ./deploy.sh
-    on:
-      tags: true
-      condition: $TEST_SUITE = linux-local-volume && $TRAVIS_OS_NAME = linux
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+  - make -f Makefile.elemental push
