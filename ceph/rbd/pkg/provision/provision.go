@@ -48,7 +48,7 @@ const (
 )
 
 var (
-	supportedFeatures = sets.NewString("layering")
+	supportedFeatures = sets.NewString("layering", "exclusive-lock", "object-map", "fast-diff", "deep-flatten", "journaling")
 )
 
 // rbdProvisionOptions is internal representation of rbd provision options,
