@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+# Modified from https://github.com/rootfs/nfs-ganesha-docker by Huamin Chen
+FROM arm32v7/ubuntu:19.04
 
-ENV CEPH_VERSION "nautilus"
-RUN rpm --import 'https://download.ceph.com/keys/release.asc' && \
-  rpm -Uvh https://download.ceph.com/rpm-$CEPH_VERSION/el7/noarch/ceph-release-1-1.el7.noarch.rpm && \
-  yum install -y epel-release && \
-  yum install -y ceph-common python-cephfs && \
-  yum clean all
+RUN apt-get update \
+    && apt-get install -y nfs-ganesha nfs-ganesha-vfs dbus-x11 rpcbind hostname libnfs-utils xfsprogs libjemalloc2 libnfsidmap2 \
+    && ln -sf ../proc/self/mounts /etc/mtab \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY cephfs-provisioner /usr/local/bin/cephfs-provisioner
-COPY cephfs_provisioner/cephfs_provisioner.py /usr/local/bin/cephfs_provisioner
-RUN chmod -v o+x /usr/local/bin/cephfs_provisioner
+RUN mkdir -p /var/run/dbus
+RUN mkdir -p /export
 
+# expose mountd 20048/tcp and nfsd 2049/tcp and rpcbind 111/tcp 111/udp
+EXPOSE 2049/tcp 20048/tcp 111/tcp 111/udp
+
+COPY nfs-provisioner /nfs-provisioner
+ENTRYPOINT ["/nfs-provisioner"]

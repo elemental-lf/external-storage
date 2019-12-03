@@ -34,7 +34,7 @@ Kubernetes:
 # Set the subject of the RBAC objects to the current namespace where the provisioner is being deployed
 $ NS=$(kubectl config get-contexts|grep -e "^\*" |awk '{print $5}')
 $ NAMESPACE=${NS:-default}
-$ sed -i'' "s/namespace:.*/namespace: $NAMESPACE/g" ./deploy/rbac.yaml
+$ sed -i'' "s/namespace:.*/namespace: $NAMESPACE/g" ./deploy/rbac.yaml ./deploy/deployment.yaml
 $ kubectl create -f deploy/rbac.yaml
 ```
 
@@ -58,11 +58,14 @@ Next you must edit the provisioner's deployment file to add connection informati
 
 ```yaml
 kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   name: nfs-client-provisioner
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
   strategy:
     type: Recreate
   template:
