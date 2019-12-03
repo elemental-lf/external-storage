@@ -136,16 +136,25 @@ func (u *RBDUtil) DeleteImage(image string, pOpts *rbdProvisionOptions) error {
 		klog.Info("rbd is still being used ", image)
 		return fmt.Errorf("rbd %s is still being used", image)
 	}
-	// rbd rm
 	mon := u.kernelRBDMonitorsOpt(pOpts.monitors)
-	klog.V(4).Infof("rbd: rm %s using mon %s, pool %s id %s key %s", image, mon, pOpts.pool, pOpts.adminID, pOpts.adminSecret)
-	args := []string{"rm", image, "--pool", pOpts.pool, "--id", pOpts.adminID, "-m", mon, "--key=" + pOpts.adminSecret}
+	// rbd snap purge
+	klog.V(4).Infof("rbd: snap purge %s using mon %s, pool %s id %s key %s", image, mon, pOpts.pool, pOpts.adminID, pOpts.adminSecret)
+	args := []string{"snap", "purge", image, "--pool", pOpts.pool, "--id", pOpts.adminID, "-m", mon, "--key=" + pOpts.adminSecret}
 	output, err = u.execCommand("rbd", args)
-	if err == nil {
-		return nil
+	if err != nil {
+		klog.Errorf("failed to purge snapshots on rbd image: %v, command output: %s", err, string(output))
+		return err
 	}
-	klog.Errorf("failed to delete rbd image: %v, command output: %s", err, string(output))
-	return err
+	// rbd rm
+	klog.V(4).Infof("rbd: rm %s using mon %s, pool %s id %s key %s", image, mon, pOpts.pool, pOpts.adminID, pOpts.adminSecret)
+	args = []string{"rm", image, "--pool", pOpts.pool, "--id", pOpts.adminID, "-m", mon, "--key=" + pOpts.adminSecret}
+	output, err = u.execCommand("rbd", args)
+	if err != nil {
+		klog.Errorf("failed to delete rbd image: %v, command output: %s", err, string(output))
+		return err
+	}
+
+	return nil
 }
 
 func (u *RBDUtil) execCommand(command string, args []string) ([]byte, error) {
