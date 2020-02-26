@@ -86,7 +86,8 @@ func (u *RBDUtil) CreateImage(image string, pOpts *rbdProvisionOptions, options 
 }
 
 // rbdStatus checks if there is watcher on the image.
-// It returns true if there is a watcher onthe image, otherwise returns false.
+// It returns true if there is a watcher on the image, otherwise returns false.
+// A missing image also returns false.
 func (u *RBDUtil) rbdStatus(image string, pOpts *rbdProvisionOptions) (bool, error) {
 	var err error
 	var output string
@@ -112,9 +113,14 @@ func (u *RBDUtil) rbdStatus(image string, pOpts *rbdProvisionOptions) (bool, err
 	cmd, err = u.execCommand("rbd", args)
 	output = string(cmd)
 
-	// If command never succeed, returns its last error.
 	if err != nil {
-		return false, err
+		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 2 {
+			klog.Warningf("rbb: the image %s no longer exists: %s", image, output)
+			return false, nil
+		} else {
+			// If command never succeed, returns its last error.
+			return false, err
+		}
 	}
 
 	if strings.Contains(output, imageWatcherStr) {
@@ -142,16 +148,27 @@ func (u *RBDUtil) DeleteImage(image string, pOpts *rbdProvisionOptions) error {
 	args := []string{"snap", "purge", image, "--pool", pOpts.pool, "--id", pOpts.adminID, "-m", mon, "--key=" + pOpts.adminSecret}
 	output, err = u.execCommand("rbd", args)
 	if err != nil {
-		klog.Errorf("failed to purge snapshots on rbd image: %v, command output: %s", err, string(output))
-		return err
+		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 2 {
+			klog.Warningf("rbd: image %s no longer exists: %s", image, output)
+			klog.Warning("rbd: trying to remove it anyway")
+			// fall through
+		} else {
+			klog.Errorf("failed to purge snapshots on rbd image: %v, command output: %s", err, string(output))
+			return err
+		}
 	}
 	// rbd rm
 	klog.V(4).Infof("rbd: rm %s using mon %s, pool %s id %s key %s", image, mon, pOpts.pool, pOpts.adminID, pOpts.adminSecret)
 	args = []string{"rm", image, "--pool", pOpts.pool, "--id", pOpts.adminID, "-m", mon, "--key=" + pOpts.adminSecret}
 	output, err = u.execCommand("rbd", args)
 	if err != nil {
-		klog.Errorf("failed to delete rbd image: %v, command output: %s", err, string(output))
-		return err
+		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 2 {
+			klog.Warningf("rbd: image %s no longer exists: %s", image, output)
+			// fall through
+		} else {
+			klog.Errorf("failed to delete rbd image: %v, command output: %s", err, string(output))
+			return err
+		}
 	}
 
 	return nil
@@ -171,9 +188,6 @@ func (u *RBDUtil) execCommand(command string, args []string) ([]byte, error) {
 	}
 
 	// If there's no context error, we know the command completed (or errored).
-	if err != nil {
-		return nil, fmt.Errorf("rbd: Command exited with non-zero code: %v", err)
-	}
-
+	// We need to return the err value returned by cmd.CombinedOutput() as callers check the exit code contained in it.
 	return out, err
 }
