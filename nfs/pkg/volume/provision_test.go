@@ -30,9 +30,8 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
 	"k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,8 +42,6 @@ import (
 func TestCreateVolume(t *testing.T) {
 	tmpDir := utiltesting.MkTmpdirOrDie("nfsProvisionTest")
 	defer os.RemoveAll(tmpDir)
-
-	delete := v1.PersistentVolumeReclaimDelete
 
 	tests := []struct {
 		name             string
@@ -61,12 +58,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "succeed creating volume",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-1",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-1",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "1.1.1.1",
@@ -79,12 +74,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "succeed creating volume again",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-2",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-2",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "1.1.1.1",
@@ -97,12 +90,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "bad parameter",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"foo": "bar"},
-				},
-				PVName: "pvc-3",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-3",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{"foo": "bar"},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "",
@@ -116,12 +107,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "bad server",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-4",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-4",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           serviceEnv,
 			expectedServer:   "",
@@ -135,12 +124,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "dir already exists",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-1",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-1",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "",
@@ -154,12 +141,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "error exporting",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "FAIL_TO_EXPORT_ME",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "FAIL_TO_EXPORT_ME",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "",
@@ -172,12 +157,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "succeed creating volume last slot",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-3",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-3",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "1.1.1.1",
@@ -190,12 +173,10 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name: "max export limit exceeded",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVName: "pvc-3",
-				PVC:    newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
+				PVName:                        "pvc-3",
+				PVC:                           newClaim(resource.MustParse("1Ki"), []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce, v1.ReadOnlyMany}, nil),
+				Parameters:                    map[string]string{},
 			},
 			envKey:           podIPEnv,
 			expectedServer:   "",
@@ -246,8 +227,6 @@ func TestValidateOptions(t *testing.T) {
 	tmpDir := utiltesting.MkTmpdirOrDie("nfsProvisionTest")
 	defer os.RemoveAll(tmpDir)
 
-	delete := v1.PersistentVolumeReclaimDelete
-
 	tests := []struct {
 		name               string
 		options            controller.ProvisionOptions
@@ -258,11 +237,8 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "empty parameters",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{},
-				},
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid: "none",
 			expectError: false,
@@ -270,11 +246,8 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "gid parameter value 'none'",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"gid": "none"},
-				},
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"gid": "none"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid: "none",
 			expectError: false,
@@ -282,68 +255,41 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "gid parameter value id",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"gid": "1"},
-				},
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"gid": "1"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid: "1",
 			expectError: false,
 		},
 		{
-			name: "bad parameter name",
-			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"foo": "bar"},
-				},
-			},
+			name:        "bad parameter name",
+			options:     controller.ProvisionOptions{Parameters: map[string]string{"foo": "bar"}},
 			expectedGid: "",
 			expectError: true,
 		},
 		{
-			name: "bad gid parameter value string",
-			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"gid": "foo"},
-				},
-			},
+			name:        "bad gid parameter value string",
+			options:     controller.ProvisionOptions{Parameters: map[string]string{"gid": "foo"}},
 			expectedGid: "",
 			expectError: true,
 		},
 		{
-			name: "bad gid parameter value zero",
-			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"gid": "0"},
-				},
-			},
+			name:        "bad gid parameter value zero",
+			options:     controller.ProvisionOptions{Parameters: map[string]string{"gid": "0"}},
 			expectedGid: "",
 			expectError: true,
 		},
 		{
-			name: "bad gid parameter value negative",
-			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"gid": "-1"},
-				},
-			},
+			name:        "bad gid parameter value negative",
+			options:     controller.ProvisionOptions{Parameters: map[string]string{"gid": "-1"}},
 			expectedGid: "",
 			expectError: true,
 		},
 		{
 			name: "root squash parameter value 'true'",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"rootSquash": "true"},
-				},
-
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"rootSquash": "true"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid:        "none",
 			expectedRootSquash: true,
@@ -352,12 +298,8 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "root squash parameter value 'false'",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"rootSquash": "false"},
-				},
-
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"rootSquash": "false"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid:        "none",
 			expectedRootSquash: false,
@@ -366,11 +308,8 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "bad root squash parameter value neither 'true' nor 'false'",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"rootSquash": "asdf"},
-				},
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"rootSquash": "asdf"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectError: true,
 		},
@@ -379,11 +318,8 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "mount options parameter key",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-					Parameters:    map[string]string{"mountOptions": "asdf"},
-				},
-				PVC: newClaim(resource.MustParse("1Ki"), nil, nil),
+				Parameters: map[string]string{"mountOptions": "asdf"},
+				PVC:        newClaim(resource.MustParse("1Ki"), nil, nil),
 			},
 			expectedGid: "none",
 			expectError: false,
@@ -392,9 +328,6 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "non-nil selector",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-				},
 				PVC: newClaim(resource.MustParse("1Ki"), nil, &metav1.LabelSelector{MatchLabels: nil}),
 			},
 			expectedGid: "",
@@ -403,9 +336,6 @@ func TestValidateOptions(t *testing.T) {
 		{
 			name: "bad capacity",
 			options: controller.ProvisionOptions{
-				StorageClass: &storagev1.StorageClass{
-					ReclaimPolicy: &delete,
-				},
 				PVC: newClaim(resource.MustParse("1Ei"), nil, nil),
 			},
 			expectedGid: "",
@@ -673,20 +603,7 @@ func TestGetServer(t *testing.T) {
 			name: "valid node, valid service, should use node",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -699,20 +616,7 @@ func TestGetServer(t *testing.T) {
 			name: "invalid service, valid node, should use node",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"3.3.3.3"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"3.3.3.3"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -725,20 +629,7 @@ func TestGetServer(t *testing.T) {
 			name: "valid service only",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -751,20 +642,7 @@ func TestGetServer(t *testing.T) {
 			name: "valid service but no namespace",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -777,20 +655,7 @@ func TestGetServer(t *testing.T) {
 			name: "invalid service, ports don't match exactly",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{999999, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {999999, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -803,20 +668,7 @@ func TestGetServer(t *testing.T) {
 			name: "invalid service, points to different pod IP",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"3.3.3.3"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"3.3.3.3"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "2.2.2.2",
 			service:        "foo",
@@ -829,20 +681,7 @@ func TestGetServer(t *testing.T) {
 			name: "service but no pod IP to check if valid",
 			objs: []runtime.Object{
 				newService("foo", "1.1.1.1"),
-				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{
-					{2049, v1.ProtocolTCP},
-					{2049, v1.ProtocolUDP},
-					{32803, v1.ProtocolTCP},
-					{32803, v1.ProtocolUDP},
-					{20048, v1.ProtocolTCP},
-					{20048, v1.ProtocolUDP},
-					{875, v1.ProtocolTCP},
-					{875, v1.ProtocolUDP},
-					{111, v1.ProtocolTCP},
-					{111, v1.ProtocolUDP},
-					{662, v1.ProtocolTCP},
-					{662, v1.ProtocolUDP},
-				}),
+				newEndpoints("foo", []string{"2.2.2.2"}, []endpointPort{{2049, v1.ProtocolTCP}, {20048, v1.ProtocolTCP}, {111, v1.ProtocolUDP}, {111, v1.ProtocolTCP}}),
 			},
 			podIP:          "",
 			service:        "foo",

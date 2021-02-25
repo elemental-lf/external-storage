@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/kubelet/apis"
 )
 
 const TestClusterID = "clusterid.test"
@@ -1093,8 +1092,8 @@ func TestGetVolumeLabels(t *testing.T) {
 
 	assert.Nil(t, err, "Error creating Volume %v", err)
 	assert.Equal(t, map[string]string{
-		apis.LabelZoneFailureDomain: "us-east-1a",
-		apis.LabelZoneRegion:        "us-east-1"}, labels)
+		v1.LabelZoneFailureDomain: "us-east-1a",
+		v1.LabelZoneRegion:        "us-east-1"}, labels)
 	awsServices.ec2.AssertExpectations(t)
 }
 

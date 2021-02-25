@@ -36,9 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/flowcontrol"
+	"k8s.io/cloud-provider/volume/errors"
 	apiservice "k8s.io/kubernetes/pkg/api/v1/service"
-	netsets "k8s.io/kubernetes/pkg/util/net/sets"
-	"k8s.io/kubernetes/pkg/volume"
+	netsets "k8s.io/utils/net"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/golang/glog"
@@ -48,7 +48,6 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	container "google.golang.org/api/container/v1"
 	"google.golang.org/api/googleapi"
-	"k8s.io/kubernetes/pkg/kubelet/apis"
 )
 
 const (
@@ -1016,7 +1015,7 @@ func translateAffinityType(affinityType v1.ServiceAffinity) string {
 	}
 }
 
-func (gce *Cloud) firewallNeedsUpdate(name, serviceName, region, ipAddress string, ports []v1.ServicePort, sourceRanges netsets.IPNet) (exists bool, needsUpdate bool, err error) {
+func (gce *Cloud) firewallNeedsUpdate(name, serviceName, region, ipAddress string, ports []v1.ServicePort, sourceRanges netsets.IPNetSet) (exists bool, needsUpdate bool, err error) {
 	fw, err := gce.service.Firewalls.Get(gce.projectID, makeFirewallName(name)).Do()
 	if err != nil {
 		if isHTTPErrorCode(err, http.StatusNotFound) {
@@ -1141,7 +1140,7 @@ func (gce *Cloud) createTargetPool(name, serviceName, region string, hosts []*gc
 	return nil
 }
 
-func (gce *Cloud) createFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) error {
+func (gce *Cloud) createFirewall(name, region, desc string, sourceRanges netsets.IPNetSet, ports []v1.ServicePort, hosts []*gceInstance) error {
 	firewall, err := gce.firewallObject(name, region, desc, sourceRanges, ports, hosts)
 	if err != nil {
 		return err
@@ -1159,7 +1158,7 @@ func (gce *Cloud) createFirewall(name, region, desc string, sourceRanges netsets
 	return nil
 }
 
-func (gce *Cloud) updateFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) error {
+func (gce *Cloud) updateFirewall(name, region, desc string, sourceRanges netsets.IPNetSet, ports []v1.ServicePort, hosts []*gceInstance) error {
 	firewall, err := gce.firewallObject(name, region, desc, sourceRanges, ports, hosts)
 	if err != nil {
 		return err
@@ -1177,7 +1176,7 @@ func (gce *Cloud) updateFirewall(name, region, desc string, sourceRanges netsets
 	return nil
 }
 
-func (gce *Cloud) firewallObject(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) (*compute.Firewall, error) {
+func (gce *Cloud) firewallObject(name, region, desc string, sourceRanges netsets.IPNetSet, ports []v1.ServicePort, hosts []*gceInstance) (*compute.Firewall, error) {
 	allowedPorts := make([]string, len(ports))
 	for ix := range ports {
 		allowedPorts[ix] = strconv.Itoa(int(ports[ix].Port))
@@ -1577,7 +1576,7 @@ func (gce *Cloud) GetFirewall(name string) (*compute.Firewall, error) {
 }
 
 // CreateFirewall creates the given firewall rule.
-func (gce *Cloud) CreateFirewall(name, desc string, sourceRanges netsets.IPNet, ports []int64, hostNames []string) error {
+func (gce *Cloud) CreateFirewall(name, desc string, sourceRanges netsets.IPNetSet, ports []int64, hostNames []string) error {
 	region, err := GetGCERegion(gce.localZone)
 	if err != nil {
 		return err
@@ -1611,7 +1610,7 @@ func (gce *Cloud) DeleteFirewall(name string) error {
 
 // UpdateFirewall applies the given firewall rule as an update to an existing
 // firewall rule with the same name.
-func (gce *Cloud) UpdateFirewall(name, desc string, sourceRanges netsets.IPNet, ports []int64, hostNames []string) error {
+func (gce *Cloud) UpdateFirewall(name, desc string, sourceRanges netsets.IPNetSet, ports []int64, hostNames []string) error {
 	region, err := GetGCERegion(gce.localZone)
 	if err != nil {
 		return err
@@ -2518,7 +2517,7 @@ func (gce *Cloud) doDeleteDisk(diskToDelete string) error {
 func (gce *Cloud) DeleteDisk(diskToDelete string) error {
 	err := gce.doDeleteDisk(diskToDelete)
 	if isGCEError(err, "resourceInUseByAnotherResource") {
-		return volume.NewDeletedVolumeInUseError(err.Error())
+		return errors.NewDeletedVolumeInUseError(err.Error())
 	}
 
 	if err == cloudprovider.ErrDiskNotFound {
@@ -2584,8 +2583,8 @@ func (gce *Cloud) GetAutoLabelsForPD(name string, zone string) (map[string]strin
 	}
 
 	labels := make(map[string]string)
-	labels[apis.LabelZoneFailureDomain] = zone
-	labels[apis.LabelZoneRegion] = region
+	labels[v1.LabelZoneFailureDomain] = zone
+	labels[v1.LabelZoneRegion] = region
 
 	return labels, nil
 }

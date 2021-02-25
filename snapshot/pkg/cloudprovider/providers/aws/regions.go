@@ -19,7 +19,6 @@ package aws
 import (
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/util/sets"
-	awscredentialprovider "k8s.io/kubernetes/pkg/credentialprovider/aws"
 	"sync"
 )
 
@@ -72,8 +71,6 @@ func RecognizeRegion(region string) {
 	}
 
 	glog.V(4).Infof("found AWS region %q", region)
-
-	awscredentialprovider.RegisterCredentialsProvider(region)
 
 	awsRegions.Insert(region)
 }

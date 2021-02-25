@@ -122,7 +122,7 @@ func (p *glusterfsProvisioner) deleteEndpointService(namespace string, epService
 	if kubeClient == nil {
 		return fmt.Errorf("glusterfs: failed to get kube client when deleting endpoint service")
 	}
-	err = kubeClient.Core().Services(namespace).Delete(epServiceName, nil)
+	err = kubeClient.CoreV1().Services(namespace).Delete(epServiceName, nil)
 	if err != nil {
 		klog.Errorf("glusterfs: error deleting service %s/%s: %v", namespace, epServiceName, err)
 	}

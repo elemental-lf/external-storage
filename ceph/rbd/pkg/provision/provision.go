@@ -22,8 +22,6 @@ import (
 	"net"
 	"strings"
 
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/volume"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 )
 
 const (
@@ -115,14 +115,14 @@ func (p *rbdProvisioner) getAccessModes() []v1.PersistentVolumeAccessMode {
 }
 
 // Provision creates a storage asset and returns a PV object representing it.
-func (p *rbdProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *rbdProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 	if !util.AccessModesContainedInAll(p.getAccessModes(), options.PVC.Spec.AccessModes) {
 		return nil, fmt.Errorf("invalid AccessModes %v: only AccessModes %v are supported", options.PVC.Spec.AccessModes, p.getAccessModes())
 	}
 	if options.PVC.Spec.Selector != nil {
 		return nil, fmt.Errorf("claim Selector is not supported")
 	}
-	opts, err := p.parseParameters(options.Parameters)
+	opts, err := p.parseParameters(options.StorageClass.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -154,10 +154,10 @@ func (p *rbdProvisioner) Provision(options controller.VolumeOptions) (*v1.Persis
 			},
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			VolumeMode:                    options.PVC.Spec.VolumeMode,
-			MountOptions:                  options.MountOptions,
+			MountOptions:                  options.StorageClass.MountOptions,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): resource.MustParse(fmt.Sprintf("%dMi", sizeMB)),
 			},

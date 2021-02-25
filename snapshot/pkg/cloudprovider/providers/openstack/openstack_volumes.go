@@ -23,7 +23,7 @@ import (
 	"path"
 	"strings"
 
-	k8sVolume "k8s.io/kubernetes/pkg/volume"
+	volumeerrors "k8s.io/cloud-provider/volume/errors"
 
 	"github.com/gophercloud/gophercloud"
 	volumesV2 "github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
@@ -295,7 +295,7 @@ func (os *OpenStack) DeleteVolume(volumeID string) error {
 	}
 	if used {
 		msg := fmt.Sprintf("Cannot delete the volume %q, it's still attached to a node", volumeID)
-		return k8sVolume.NewDeletedVolumeInUseError(msg)
+		return volumeerrors.NewDeletedVolumeInUseError(msg)
 	}
 
 	volumes, err := os.volumeService("")

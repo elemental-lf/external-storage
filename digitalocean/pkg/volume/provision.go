@@ -21,8 +21,6 @@ import (
 	"fmt"
 
 	"github.com/digitalocean/godo"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +28,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/kubelet/apis"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 )
 
 const (
@@ -79,7 +79,7 @@ func (p *digitaloceanProvisioner) getAccessModes() []v1.PersistentVolumeAccessMo
 
 // Provision creates a volume i.e. the storage asset and returns a PV object for
 // the volume.
-func (p *digitaloceanProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *digitaloceanProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 	if !util.AccessModesContainedInAll(p.getAccessModes(), options.PVC.Spec.AccessModes) {
 		return nil, fmt.Errorf("Invalid Access Modes: %v, Supported Access Modes: %v", options.PVC.Spec.AccessModes, p.getAccessModes())
 	}
@@ -104,7 +104,7 @@ func (p *digitaloceanProvisioner) Provision(options controller.VolumeOptions) (*
 			Annotations: annotations,
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): resource.MustParse(fmt.Sprintf("%dGi", vol.SizeGigaBytes)),
@@ -123,7 +123,7 @@ func (p *digitaloceanProvisioner) Provision(options controller.VolumeOptions) (*
 	return pv, nil
 }
 
-func (p *digitaloceanProvisioner) createVolume(volumeOptions controller.VolumeOptions) (*godo.Volume, error) {
+func (p *digitaloceanProvisioner) createVolume(volumeOptions controller.ProvisionOptions) (*godo.Volume, error) {
 	zone, ok := volumeOptions.Parameters["zone"]
 	if !ok {
 		return nil, fmt.Errorf("Error zone parameter missing")

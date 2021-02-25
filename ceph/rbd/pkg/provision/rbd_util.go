@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
@@ -45,7 +45,7 @@ func (u *RBDUtil) kernelRBDMonitorsOpt(mons []string) string {
 }
 
 // CreateImage creates a new ceph image with provision and volume options.
-func (u *RBDUtil) CreateImage(image string, pOpts *rbdProvisionOptions, options controller.VolumeOptions) (*v1.RBDPersistentVolumeSource, int, error) {
+func (u *RBDUtil) CreateImage(image string, pOpts *rbdProvisionOptions, options controller.ProvisionOptions) (*v1.RBDPersistentVolumeSource, int, error) {
 	var output []byte
 	var err error
 

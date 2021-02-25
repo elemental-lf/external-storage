@@ -27,13 +27,13 @@ import (
 	"github.com/golang/glog"
 	mApiv1 "github.com/kubernetes-incubator/external-storage/openebs/pkg/v1"
 	mayav1 "github.com/kubernetes-incubator/external-storage/openebs/types/v1"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 )
 
 const (
@@ -79,7 +79,7 @@ func NewOpenEBSProvisioner(client kubernetes.Interface) controller.Provisioner {
 var _ controller.Provisioner = &openEBSProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
-func (p *openEBSProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *openEBSProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 
 	//Issue a request to Maya API Server to create a volume
 	var volume mayav1.Volume
@@ -131,7 +131,7 @@ func (p *openEBSProvisioner) Provision(options controller.VolumeOptions) (*v1.Pe
 			},
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)],

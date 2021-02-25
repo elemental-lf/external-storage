@@ -34,7 +34,6 @@ import (
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume/gcepd"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume/gluster"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume/hostpath"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -42,6 +41,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
 )
 
 const (
@@ -69,7 +69,7 @@ func newSnapshotProvisioner(client kubernetes.Interface, crdclient *rest.RESTCli
 
 var _ controller.Provisioner = &snapshotProvisioner{}
 
-func (p *snapshotProvisioner) snapshotRestore(snapshotName string, snapshotData crdv1.VolumeSnapshotData, options controller.VolumeOptions) (*v1.PersistentVolumeSource, map[string]string, error) {
+func (p *snapshotProvisioner) snapshotRestore(snapshotName string, snapshotData crdv1.VolumeSnapshotData, options controller.ProvisionOptions) (*v1.PersistentVolumeSource, map[string]string, error) {
 	// validate the PV supports snapshot and restore
 	spec := &snapshotData.Spec
 	volumeType := crdv1.GetSupportedVolumeFromSnapshotDataSpec(spec)
@@ -82,7 +82,7 @@ func (p *snapshotProvisioner) snapshotRestore(snapshotName string, snapshotData 
 	}
 
 	// restore snapshot
-	pvSrc, labels, err := plugin.SnapshotRestore(&snapshotData, options.PVC, options.PVName, options.Parameters)
+	pvSrc, labels, err := plugin.SnapshotRestore(&snapshotData, options.PVC, options.PVName, options.StorageClass.Parameters)
 	if err != nil {
 		glog.Warningf("failed to snapshot %#v, err: %v", spec, err)
 	} else {
@@ -93,7 +93,7 @@ func (p *snapshotProvisioner) snapshotRestore(snapshotName string, snapshotData 
 }
 
 // Provision creates a storage asset and returns a PV object representing it.
-func (p *snapshotProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *snapshotProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 	if options.PVC.Spec.Selector != nil {
 		return nil, fmt.Errorf("claim Selector is not supported")
 	}
@@ -139,7 +139,7 @@ func (p *snapshotProvisioner) Provision(options controller.VolumeOptions) (*v1.P
 			},
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)],

@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	crdv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
-	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/cloudprovider"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/controller/cache"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume"
 )
@@ -49,7 +48,8 @@ type TestPlugin struct {
 	VolumeDeleteCallCount int
 }
 
-func (tp *TestPlugin) Init(cloudprovider.Interface) {
+func (tp *TestPlugin) Init(interface{}) error {
+	return nil
 }
 
 func (tp *TestPlugin) SnapshotCreate(*crdv1.VolumeSnapshot, *v1.PersistentVolume, *map[string]string) (*crdv1.VolumeSnapshotDataSource, *[]crdv1.VolumeSnapshotCondition, error) {
@@ -255,7 +255,7 @@ func fakeSchemeAndClient(roundTripper func(*http.Request) (*http.Response, error
 		ContentConfig: rest.ContentConfig{
 			GroupVersion:         &crdv1.SchemeGroupVersion,
 			ContentType:          runtime.ContentTypeJSON,
-			NegotiatedSerializer: serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)},
+			NegotiatedSerializer: serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)},
 		},
 		Transport: roundTripperFunc(roundTripper),
 	}

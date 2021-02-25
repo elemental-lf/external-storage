@@ -22,7 +22,6 @@ import (
 
 	"github.com/golang/glog"
 	crdv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
-	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/cloudprovider"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume"
 	"github.com/pborman/uuid"
 	"k8s.io/api/core/v1"
@@ -49,7 +48,8 @@ func GetPluginName() string {
 	return "glusterfs"
 }
 
-func (h *glusterfsPlugin) Init(_ cloudprovider.Interface) {
+func (h *glusterfsPlugin) Init(_ interface{}) error {
+	return nil
 }
 
 func (h *glusterfsPlugin) SnapshotCreate(
@@ -195,7 +195,7 @@ func (h *glusterfsPlugin) SnapshotRestore(snapshotData *crdv1.VolumeSnapshotData
 	glog.V(1).Infof("snapshot restored successfully to PV: %v", newSnapPV)
 
 	pv := &v1.PersistentVolumeSource{
-		Glusterfs: &v1.GlusterfsVolumeSource{
+		Glusterfs: &v1.GlusterfsPersistentVolumeSource{
 			Path:          newSnapPV,
 			EndpointsName: glusterfsEp,
 		},

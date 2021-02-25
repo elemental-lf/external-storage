@@ -23,13 +23,12 @@ import (
 
 	"github.com/golang/glog"
 	crdv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
-	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/cloudprovider"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/cloudprovider/providers/gce"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/kubelet/apis"
-	k8svol "k8s.io/kubernetes/pkg/volume/util"
+	"k8s.io/cloud-provider/volume/helpers"
+	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 const (
@@ -52,8 +51,9 @@ func GetPluginName() string {
 	return gcePersistentDiskPluginName
 }
 
-func (plugin *gcePersistentDiskPlugin) Init(cloud cloudprovider.Interface) {
+func (plugin *gcePersistentDiskPlugin) Init(cloud interface{}) error {
 	plugin.cloud = cloud.(*gce.Cloud)
+	return nil
 }
 
 func (plugin *gcePersistentDiskPlugin) SnapshotCreate(
@@ -66,7 +66,7 @@ func (plugin *gcePersistentDiskPlugin) SnapshotCreate(
 		return nil, nil, fmt.Errorf("invalid PV spec %v", spec)
 	}
 	diskName := spec.GCEPersistentDisk.PDName
-	zone := pv.Labels[apis.LabelZoneFailureDomain]
+	zone := pv.Labels[v1.LabelZoneFailureDomain]
 	snapshotName := createSnapshotName(string(pv.Name))
 
 	err := plugin.cloud.CreateSnapshot(diskName, zone, snapshotName, *tags)
@@ -102,9 +102,8 @@ func (plugin *gcePersistentDiskPlugin) SnapshotRestore(snapshotData *crdv1.Volum
 	//diskName := k8svol.GenerateVolumeName("pv-from-snapshot"+snapID, pvName, 255)
 	diskName := pvName
 	capacity := pvc.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)]
-	requestBytes := capacity.Value()
 	// GCE works with gigabytes, convert to GiB with rounding up
-	requestGB := k8svol.RoundUpSize(requestBytes, 1024*1024*1024)
+	requestGB := helpers.RoundUpToGB(capacity)
 
 	// Apply Parameters (case-insensitive). We leave validation of
 	// the values to the cloud provider.
@@ -129,9 +128,9 @@ func (plugin *gcePersistentDiskPlugin) SnapshotRestore(snapshotData *crdv1.Volum
 			glog.Infof("error getting zone information from GCE: %v", err)
 			return nil, nil, err
 		}
-		zone = k8svol.ChooseZoneForVolume(zones, pvc.Name)
+		zone, _ = helpers.ChooseZonesForVolume(zones, pvc.Name, 1).PopAny()
 	}
-	tags["source"] = k8svol.GenerateVolumeName("Created from snapshot "+snapID+" ", pvName, 255)
+	tags["source"] = util.GenerateVolumeName("Created from snapshot "+snapID+" ", pvName, 255)
 	glog.Infof("Provisioning disk %s from snapshot %s, zone %s requestGB %d tags %v", diskName, snapID, zone, requestGB, tags)
 	err = plugin.cloud.CreateDiskFromSnapshot(snapID, diskName, diskType, zone, requestGB, tags)
 	if err != nil {

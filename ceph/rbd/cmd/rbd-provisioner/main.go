@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/kubernetes-incubator/external-storage/ceph/rbd/pkg/provision"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

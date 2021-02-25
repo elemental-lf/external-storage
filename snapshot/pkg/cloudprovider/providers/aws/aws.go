@@ -47,10 +47,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	volumeerrors "k8s.io/cloud-provider/volume/errors"
+	"k8s.io/cloud-provider/volume/helpers"
 	"k8s.io/kubernetes/pkg/api/v1/service"
-	"k8s.io/kubernetes/pkg/kubelet/apis"
-	"k8s.io/kubernetes/pkg/volume"
-	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 // ProviderName is the name of this cloud provider.
@@ -1475,7 +1474,7 @@ func (d *awsDisk) deleteVolume() (bool, error) {
 				return false, nil
 			}
 			if awsError.Code() == "VolumeInUse" {
-				return false, volume.NewDeletedVolumeInUseError(err.Error())
+				return false, volumeerrors.NewDeletedVolumeInUseError(err.Error())
 			}
 		}
 		return false, fmt.Errorf("error deleting EBS volume %q: %v", d.awsID, err)
@@ -1685,7 +1684,7 @@ func (c *Cloud) CreateDisk(volumeOptions *VolumeOptions) (KubernetesVolumeID, er
 
 	createAZ := volumeOptions.AvailabilityZone
 	if createAZ == "" {
-		createAZ = util.ChooseZoneForVolume(allZones, volumeOptions.PVCName)
+		createAZ, _ = helpers.ChooseZonesForVolume(allZones, volumeOptions.PVCName, 1).PopAny()
 	}
 
 	var createType string
@@ -1784,12 +1783,12 @@ func (c *Cloud) GetVolumeLabels(volumeName KubernetesVolumeID) (map[string]strin
 		return nil, fmt.Errorf("volume did not have AZ information: %q", *info.VolumeId)
 	}
 
-	labels[apis.LabelZoneFailureDomain] = az
+	labels[v1.LabelZoneFailureDomain] = az
 	region, err := azToRegion(az)
 	if err != nil {
 		return nil, err
 	}
-	labels[apis.LabelZoneRegion] = region
+	labels[v1.LabelZoneRegion] = region
 
 	return labels, nil
 }

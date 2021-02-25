@@ -1,6 +1,6 @@
 # Deprecated
 
-__Moved to https://github.com/kubernetes-sigs/sig-storage-local-static-provisioner. This
+__Moved to https://sigs.k8s.io/sig-storage-local-static-provisioner. This
 will no longer be updated. Please open issues or PRs there!__
 
 # Local Persistent Storage User Guide

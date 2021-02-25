@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math"
 
-	esUtil "github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
+	esUtil "sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

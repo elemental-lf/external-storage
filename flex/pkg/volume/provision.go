@@ -17,14 +17,14 @@ limitations under the License.
 package volume
 
 import (
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/util"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"k8s.io/utils/exec"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/util"
 	"strconv"
 )
 
@@ -68,7 +68,7 @@ var _ controller.Provisioner = &flexProvisioner{}
 
 // Provision creates a volume i.e. the storage asset and returns a PV object for
 // the volume.
-func (p *flexProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *flexProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 	err := p.createVolume(options)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (p *flexProvisioner) Provision(options controller.VolumeOptions) (*v1.Persi
 			Annotations: annotations,
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)],
@@ -107,7 +107,7 @@ func (p *flexProvisioner) Provision(options controller.VolumeOptions) (*v1.Persi
 	return pv, nil
 }
 
-func (p *flexProvisioner) createVolume(volumeOptions controller.VolumeOptions) error {
+func (p *flexProvisioner) createVolume(volumeOptions controller.ProvisionOptions) error {
 	extraOptions := map[string]string{}
 	extraOptions[optionPVorVolumeName] = volumeOptions.PVName
 
@@ -120,7 +120,7 @@ func (p *flexProvisioner) createVolume(volumeOptions controller.VolumeOptions) e
 	extraOptions["requestGiB"] = strconv.Itoa(requestGiB)
 
 	call := p.NewDriverCall(p.execCommand, provisionCmd)
-	call.AppendSpec(volumeOptions.Parameters, extraOptions)
+	call.AppendSpec(volumeOptions.StorageClass.Parameters, extraOptions)
 	output, err := call.Run()
 	if err != nil {
 		if output == nil || output.Message == "" {

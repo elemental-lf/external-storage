@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 
 	crdv1 "github.com/kubernetes-incubator/external-storage/snapshot/pkg/apis/crd/v1"
-	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/cloudprovider"
 	"github.com/kubernetes-incubator/external-storage/snapshot/pkg/volume"
 )
 
@@ -52,7 +51,8 @@ func GetPluginName() string {
 	return "hostPath"
 }
 
-func (h *hostPathPlugin) Init(_ cloudprovider.Interface) {
+func (h *hostPathPlugin) Init(_ interface{}) error {
+	return nil
 }
 
 func (h *hostPathPlugin) SnapshotCreate(

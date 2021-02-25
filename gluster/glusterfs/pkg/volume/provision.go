@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/controller"
-	"github.com/kubernetes-sigs/sig-storage-lib-external-provisioner/gidallocator"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/gidallocator"
 )
 
 const (
@@ -76,7 +76,7 @@ type glusterBrick struct {
 
 var _ controller.Provisioner = &glusterfsProvisioner{}
 
-func (p *glusterfsProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+func (p *glusterfsProvisioner) Provision(options controller.ProvisionOptions) (*v1.PersistentVolume, error) {
 	if options.PVC.Spec.Selector != nil {
 		return nil, fmt.Errorf("claim Selector is not supported")
 	}
@@ -89,7 +89,7 @@ func (p *glusterfsProvisioner) Provision(options controller.VolumeOptions) (*v1.
 
 	pvcNamespace := options.PVC.Namespace
 	pvcName := options.PVC.Name
-	cfg, err := NewProvisionerConfig(options.PVName, options.Parameters)
+	cfg, err := NewProvisionerConfig(options.PVName, options.StorageClass.Parameters)
 	if err != nil {
 		return nil, fmt.Errorf("Parameter is invalid: %s", err)
 	}
@@ -108,7 +108,7 @@ func (p *glusterfsProvisioner) Provision(options controller.VolumeOptions) (*v1.
 			Annotations: annotations,
 		},
 		Spec: v1.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: v1.ResourceList{
 				v1.ResourceName(v1.ResourceStorage): options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)],
@@ -131,7 +131,7 @@ func (p *glusterfsProvisioner) getClusterNodes(cfg *ProvisionerConfig) []string 
 }
 
 func (p *glusterfsProvisioner) createVolume(
-	namespace string, name string, cfg *ProvisionerConfig, gid int) (*v1.GlusterfsVolumeSource, error) {
+	namespace string, name string, cfg *ProvisionerConfig, gid int) (*v1.GlusterfsPersistentVolumeSource, error) {
 	var err error
 	var bricks []glusterBrick
 	var endpoint *v1.Endpoints
@@ -156,7 +156,7 @@ func (p *glusterfsProvisioner) createVolume(
 			klog.Errorf("glusterfs: failed to create endpoint/service: %v", err)
 		} else {
 			klog.V(3).Infof("glusterfs: dynamic ep %v and svc : %v ", endpoint, service)
-			return &v1.GlusterfsVolumeSource{
+			return &v1.GlusterfsPersistentVolumeSource{
 				EndpointsName: endpoint.Name,
 				Path:          cfg.VolumeName,
 				ReadOnly:      false,
@@ -245,7 +245,7 @@ func (p *glusterfsProvisioner) createEndpointService(namespace string, epService
 	if kubeClient == nil {
 		return nil, nil, fmt.Errorf("glusterfs: failed to get kube client when creating endpoint service")
 	}
-	_, err = kubeClient.Core().Endpoints(namespace).Create(endpoint)
+	_, err = kubeClient.CoreV1().Endpoints(namespace).Create(endpoint)
 	if err != nil && errors.IsAlreadyExists(err) {
 		klog.V(1).Infof("glusterfs: endpoint [%s] already exist in namespace [%s]", endpoint, namespace)
 		err = nil
@@ -265,7 +265,7 @@ func (p *glusterfsProvisioner) createEndpointService(namespace string, epService
 		Spec: v1.ServiceSpec{
 			Ports: []v1.ServicePort{
 				{Protocol: "TCP", Port: 1}}}}
-	_, err = kubeClient.Core().Services(namespace).Create(service)
+	_, err = kubeClient.CoreV1().Services(namespace).Create(service)
 	if err != nil && errors.IsAlreadyExists(err) {
 		klog.V(1).Infof("glusterfs: service [%s] already exist in namespace [%s]", service, namespace)
 		err = nil
