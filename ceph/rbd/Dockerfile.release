@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang AS build
+FROM golang:1.15-buster AS build
 
 COPY . /go/src/github.com/kubernetes-incubator/external-storage
 WORKDIR /go/src/github.com/kubernetes-incubator/external-storage/ceph/rbd/cmd/rbd-provisioner
