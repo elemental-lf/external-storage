@@ -1,9 +1,21 @@
 ## CephFS and RBD volume provisioners for Kubernetes
 
-This fork was needed because no current container images were available anymore as there haven't been any releases
-since August 2018. It is current with upstream `master` as of 08/08/2019 and contains one further fix to allow the RBD
-provisioner to compile again. It also supports all Ceph RBD image features and not only `layering` in the storage
-class specification.
+This fork of https://github.com/kubernetes-retired/external-storage was needed because no current container images were 
+available anymore as there haven't been any releases since August 2018 and since then the whole project has been retired.
+
+The fork is current with upstream `master` as of 08/08/2019. In March 2021 I merged the `openstorage-5.5` branch of 
+the "Open Storage for Linux Containers by Portwkorx" fork of this project (found at 
+https://github.com/libopenstorage/external-storage/tree/openstorage-5.5, commit 697cbc8) to vendor in new Kubernetes
+client libraries which also required some small changes to the code of the provisioners.
+
+Here is a summary of the Ceph related changes that I made in addition to the work documented above:
+
+* Support for more RBD image features apart from `layering` (NB: Your RBD client needs to support them too!)
+* Ignore already deleted images and allow K8s resource deletion to proceed
+* Purge any (unprotected) snapshots before deleting the image allowing the image deletion to succeed
+
+The last change is probably the one with the most impact, and you should consider if this is the right behaviour
+for your use case.
 
 Container images are automatically made available on Docker Hub:
 
