@@ -9,6 +9,8 @@ https://github.com/libopenstorage/external-storage/tree/openstorage-5.5, commit 
 client libraries which also required some small changes to the code of the provisioners. These changes allowed the
 provisioners to work with Kubernetes 1.20.
 
+Starting with version 0.6.0 container images are based on Ceph Octopus.
+
 Here is a summary of the Ceph related changes that were made in addition to the work documented above:
 
 * Support for more RBD image features apart from `layering` (NB: Your RBD client needs to support them too!)

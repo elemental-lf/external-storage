@@ -2,11 +2,11 @@ ifeq ($(REGISTRY),)
 	REGISTRY = elementalnet
 endif
 
-VERSION=$(shell ./build-script-collection/get-version-git elemental-v)
-IMAGE_VERSION = $(subst +,_,$(VERSION))
+VERSION := $(shell ./build-script-collection/get-version-git elemental-v)
+IMAGE_VERSION := $(subst +,_,$(VERSION))
 
 ifeq ($(CEPH_VERSION),)
-	CEPH_VERSION=mimic
+	CEPH_VERSION=octopus
 endif
 
 RBD_IMAGE = $(REGISTRY)/rbd-provisioner:$(IMAGE_VERSION)
