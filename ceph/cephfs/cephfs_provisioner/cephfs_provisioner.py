@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2017 The Kubernetes Authors.
 #
@@ -326,7 +326,7 @@ class CephFSNativeDriver(object):
             self._volume_client = None
 
 def usage():
-    print "Usage: " + sys.argv[0] + " --remove -n share_name -u ceph_user_id -s size"
+    print("Usage: " + sys.argv[0] + " --remove -n share_name -u ceph_user_id -s size")
 
 def main():
     create = True
@@ -355,7 +355,7 @@ def main():
         sys.exit(1)
 
     if create:
-        print cephfs.create_share(share, user, size=size)
+        print(cephfs.create_share(share, user, size=size))
     else:
         cephfs.delete_share(share, user)
 
