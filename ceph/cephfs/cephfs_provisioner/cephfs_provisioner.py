@@ -123,7 +123,7 @@ class CephFSNativeDriver(object):
         # read the layout
         pool_name = self._volume_client._get_ancestor_xattr(path, "ceph.dir.layout.pool")
         try:
-            namespace = self._volume_client.fs.getxattr(path, "ceph.dir.layout.pool_namespace")
+            namespace = self._volume_client.fs.getxattr(path, "ceph.dir.layout.pool_namespace").decode(encoding="ascii", errors="strict")
         except cephfs.NoData:
             # ceph.dir.layout.pool_namespace is optional
             namespace = None
@@ -259,7 +259,7 @@ class CephFSNativeDriver(object):
         path = self.volume_client._get_path(volume_path)
         pool_name = self.volume_client._get_ancestor_xattr(path, "ceph.dir.layout.pool")
         try:
-            namespace = self.volume_client.fs.getxattr(path, "ceph.dir.layout.pool_namespace")
+            namespace = self.volume_client.fs.getxattr(path, "ceph.dir.layout.pool_namespace").decode(encoding="ascii", errors="strict")
         except cephfs.NoData:
             # ceph.dir.layout.pool_namespace is optional
             namespace = None
